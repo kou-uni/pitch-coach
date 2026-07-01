@@ -10,8 +10,9 @@ description: 大学の授業向け5分ピッチ作成コーチ。受講生が自
 ## 進め方の全体像
 
 1. `references/coaching-phases.md` を読み、Phase 0から順に対話を進める（Phase 0〜8）
-2. Phase 7でデッキを生成するときは `references/deck-spec.md` を読み、`assets/deck_template.js` をコピーしてテキストを差し替える
-3. Phase 8完了後、`references/coaching-phases.md` のアドオンメニューを提示する（押し付けない）
+2. Phase 6でスライドを確定するときは `references/md-deck-format.md` を読み、`assets/slides_template.md` をコピーして**MDデッキ（プレ完成版）**を作る。MDはMarp互換で、そのままスライドとして発表できる
+3. Phase 7（任意）でPPTXが必要な場合のみ `references/deck-spec.md` を読み、`assets/deck_template.js` にMDデッキの内容を移植して生成する
+4. Phase 8完了後、`references/coaching-phases.md` のアドオンメニューを提示する（押し付けない）
 
 いきなり資料を作らない。「資料だけ作って」と言われても、Phase 1（原体験の深掘り）を飛ばすとピッチの核が空洞になることを説明し、最短15分の対話を提案する。それでも急ぐ場合のみ、既知の情報だけで下書きを作り、空欄に【要対話】タグを付ける。
 
@@ -47,9 +48,12 @@ description: 大学の授業向け5分ピッチ作成コーチ。受講生が自
 | ファイル | いつ読むか |
 |---|---|
 | `references/coaching-phases.md` | 対話を始める前（Phase 0〜8の手順とアドオンメニュー） |
-| `references/deck-spec.md` | Phase 7のPPTX生成前（デザイントークン・スライド型・pptxgenjsの落とし穴） |
-| `assets/deck_template.js` | Phase 7で生成の土台としてコピーする（動作確認済みのプレースホルダ版） |
-| `assets/deck_sample_moraeru.js` | 記入例が必要なとき（架空学生「モラエル」の完成サンプル。文体・分量の基準） |
+| `references/md-deck-format.md` | Phase 6のMDデッキ作成前（書式・Marpでの発表/変換ルート・運用） |
+| `references/deck-spec.md` | Phase 7でPPTXを作る場合のみ（デザイントークン・スライド型・pptxgenjsの落とし穴） |
+| `assets/slides_template.md` | Phase 6で `slides.md` としてコピーする土台（Marp互換・プレースホルダ版） |
+| `assets/slides_sample_moraeru.md` | 記入例（架空学生「モラエル」のMD完成版。文体・分量の基準） |
+| `assets/deck_template.js` | Phase 7のPPTX生成の土台（動作確認済み・pptxgenjs） |
+| `assets/deck_sample_moraeru.js` | PPTX版の記入例（モラエルの完成サンプル） |
 
 ## 最初の一言
 
