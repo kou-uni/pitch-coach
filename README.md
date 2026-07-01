@@ -19,16 +19,18 @@ pitch-coach/
   assets/
     slides_template.md           … Marp MDデッキ テンプレ（一次成果物）
     slides_sample_moraeru.md     … Marp MD 完成サンプル「モラエル」
+    build_slides_html.mjs        … slides.md → 自己完結HTMLビュー生成（npm不要）
     deck_template.js             … PPTX生成テンプレ（任意）
     deck_sample_moraeru.js       … PPTX 完成サンプル（任意）
 ```
 
 ## ワークフロー（MD-first）
-対話（Phase 0〜8）→ **Phase 6 で `slides.md`（Marp MD）を完成** → 確認 → 必要なら PPTX。
-発表は3ルートから選択：
-1. **MDのまま投影**（VS Code + Marp 拡張）＝授業内発表はこれで十分
-2. **HTML/PDF**（`npx @marp-team/marp-cli slides.md -o slides.html`）＝配布・提出
-3. **編集可能なPPTX**（`deck_template.js` 経由）＝学外提出・上位審査のみ
+対話（Phase 0〜8）→ **Phase 6 で `slides.md`（Marp MD）を完成** → 確認 → 発表 or 変換。
+発表は4ルートから選択：
+1. **HTMLビュー（インストール不要・最推奨で"見えやすい"）**：`node assets/build_slides_html.mjs slides.md slides.html` → `slides.html` をブラウザで開くだけ。キー操作・発表者ノート(n)・一覧(o)・全画面(f)つき、ブランド配色。npm/拡張/ネット不要
+2. **MDのまま投影**（VS Code + Marp 拡張）
+3. **HTML/PDF（Marp標準）**（`npx @marp-team/marp-cli slides.md -o slides.html`）
+4. **編集可能なPPTX**（`deck_template.js` 経由）＝学外提出・上位審査のみ
 
 ## 使い方 A：Claude Code（受講生向け・推奨）
 空のフォルダで `claude` を起動し、**配布プロンプト**を貼るだけ。プロンプトがこのリポジトリからスキルを取得して `.claude/skills/pitch-coach/` に設置し、Phase 0 から対話を始めます。手動なら：
