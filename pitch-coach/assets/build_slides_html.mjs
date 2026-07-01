@@ -5,13 +5,16 @@
  *   既定  : slides.md -> slides.html
  * 依存なし（Node標準のみ / npm install 不要）。単一ソースは slides.md、これは表示用の派生物。
  * フロントマターの style: ブロック（.tag/.time/.accent/.muted/.hook 等）をそのまま流用し、
- * 生HTML(span/br)とMDテーブルも Marp と同様に描画するのでデザインが崩れない。
+ * 生HTML(span/br)とMDテーブル・画像も Marp と同様に描画。ローカル画像は base64 で埋め込むので
+ * 図（グラフ）入りでも「単一HTMLファイル1つ」で完全ポータブル（figures/ の同梱不要）。
  * 操作: ← → / Space / クリックで移動、n=発表者ノート、f=全画面、o=一覧、数字ジャンプ。
  */
 import fs from 'fs';
+import path from 'path';
 
 const SRC = process.argv[2] || 'slides.md';
 const OUT = process.argv[3] || 'slides.html';
+const BASE = path.dirname(path.resolve(SRC));
 
 let raw;
 try { raw = fs.readFileSync(SRC, 'utf8'); }
@@ -29,11 +32,32 @@ if (raw.startsWith('---')) {
     if (sm) authorCss = sm[1].replace(/^\s{0,2}/gm, '');
   }
 }
-// Marp の section セレクタを本ビューの .slide に読み替え
 authorCss = authorCss.replace(/\bsection\b/g, '.slide');
 
-// content(trusted) はHTMLを透過。**bold** と `code` だけ変換。
-const inl = (s) => s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');
+// ローカル画像を data URI に（figures同梱不要の単一HTML化）
+const MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
+let missing = 0;
+function dataUri(src) {
+  if (/^(https?:|data:)/.test(src)) return src;
+  const p = path.resolve(BASE, src);
+  try {
+    const b = fs.readFileSync(p);
+    const ext = path.extname(p).toLowerCase();
+    return `data:${MIME[ext] || 'application/octet-stream'};base64,${b.toString('base64')}`;
+  } catch { missing++; console.error(`  画像が見つかりません（参照のまま残します）: ${src}`); return src; }
+}
+const inlineImages = (html) => html.replace(/(<img[^>]*\ssrc=")([^"]+)(")/g, (_, a, src, c) => a + dataUri(src) + c);
+
+// content(trusted) はHTMLを透過。![alt](src) → <img>、**bold**、`code`。
+function inl(s) {
+  // Marp画像記法 ![w:600 alt](src) / ![](src)
+  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
+    let style = '';
+    alt = alt.replace(/\b([wh]):(\d+)(px)?/g, (_, d, v) => { style += (d === 'w' ? 'width' : 'height') + `:${v}px;`; return ''; }).replace(/\bcenter\b/g, '').trim();
+    return `<img src="${src.trim()}" alt="${alt}"${style ? ` style="${style}"` : ''}>`;
+  });
+  return s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');
+}
 const isRow = (l) => /^\|.*\|\s*$/.test(l);
 const isSep = (l) => /^\|[\s:|-]+\|\s*$/.test(l);
 const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => inl(c.trim()));
@@ -46,7 +70,6 @@ function mdToHtml(md) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].replace(/\s+$/, '');
     if (!line.trim()) { closeList(); continue; }
-    // テーブル（連続する | 行）
     if (isRow(line)) {
       closeList();
       const block = [];
@@ -73,7 +96,6 @@ function mdToHtml(md) {
   return out.join('\n');
 }
 
-// スライド分割 + _class:dark と発表者ノート抽出
 const slides = body.split(/\n---\s*\n/).map((chunk) => {
   const dark = /<!--\s*_class:\s*dark\s*-->/.test(chunk);
   const notes = [];
@@ -81,14 +103,14 @@ const slides = body.split(/\n---\s*\n/).map((chunk) => {
     if (/_class|_backgroundColor|_color|_paginate|_header|_footer/.test(c)) return '';
     notes.push(c.trim()); return '';
   });
-  return { html: mdToHtml(cleaned).trim(), note: notes.join('\n\n'), dark };
+  return { html: inlineImages(mdToHtml(cleaned).trim()), note: notes.join('\n\n'), dark };
 }).filter((s) => s.html);
 
 const data = JSON.stringify(slides);
 
 const page = `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>5分ピッチ スライド</title>
+<title>5分プレゼン スライド</title>
 <style>
   *{margin:0;box-sizing:border-box}
   html,body{height:100%}
@@ -107,13 +129,12 @@ const page = `<!DOCTYPE html>
   .slide li{margin:.15em 0}
   .slide strong{color:#F96167}
   .slide code{background:rgba(0,0,0,.06);padding:.1em .4em;border-radius:6px;font-size:.9em}
+  .slide img{max-width:100%;max-height:58vh;display:block;margin:.4em auto;object-fit:contain}
   .slide table{border-collapse:collapse;width:100%;margin:.5em 0;font-size:.92em}
   .slide th,.slide td{border:1px solid #dfe1ea;padding:.4em .7em;text-align:left;vertical-align:top}
   .slide thead th{background:#2F3C7E;color:#fff;text-align:center;font-size:1.15em}
   .slide blockquote{border-left:4px solid #F9E795;padding-left:.8em;margin:.5em 0;color:#555}
-  /* --- 作者CSS（フロントマターの style: を流用） --- */
   ${authorCss}
-  /* --- ビューのUI --- */
   #hud{position:fixed;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:16px;color:#aab;font-size:12px;letter-spacing:.05em;pointer-events:none}
   #hud b{color:#fff}
   .nav{position:fixed;top:0;bottom:0;width:20%;cursor:pointer} #prev{left:0} #next{right:0}
@@ -122,7 +143,6 @@ const page = `<!DOCTYPE html>
   #ov{position:fixed;inset:0;background:#0b0d1a;display:none;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px;overflow:auto}
   #ov.on{display:grid}
   #ov .thumb{background:#fff;border-radius:8px;padding:12px;font-size:9px;cursor:pointer;aspect-ratio:16/9;overflow:hidden;position:relative}
-  #ov .thumb.dark,.slide.dark{}
   #help{position:fixed;top:10px;right:14px;color:#889;font-size:11px;pointer-events:none}
 </style></head><body>
 <div id="stage"></div>
@@ -157,4 +177,4 @@ show(0);
 </script></body></html>`;
 
 fs.writeFileSync(OUT, page);
-console.log(`wrote: ${OUT}（${slides.length}枚）— ブラウザで開いてください`);
+console.log(`wrote: ${OUT}（${slides.length}枚${missing ? ` / 画像未検出 ${missing}件` : ''}）— ブラウザで開いてください`);
